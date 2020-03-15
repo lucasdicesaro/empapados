@@ -8,7 +8,7 @@ This project has two main components:
 1. One PHP component built to parse html data which is read from a remote site and with its results json data structures are generated.
 2. One JS component built to read the mentioned structures, in order to calculate the different possibilities of subject modules scheduled in a week. At the end, that calculation is drawn in different html tables.
 
-The site is using [Bootstrapiou](https://bootstrapious.com/) responsive free templates. Special thanks to them.
+The site is using [Bootstrapious](https://bootstrapious.com/) responsive free templates. Special thanks to them.
 
 Visit the site [EMPApados](http://metaleideas.com/empapados) with this code working. Thank you.
 
