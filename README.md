@@ -1,7 +1,7 @@
 
 # empapados
 
-Este proyecto se cre&oacute; con el prop&oacute; de darle a los estudiantes de la EMPA las distintas posibilidades para distribuir sus materias en la semana, esto a partir de la selecci&oacute;n de materias a cursar y la selecci&oacute;n de los horarios disponibles o de preferencia.
+Este proyecto se cre&oacute; con el prop&oacute;sito de darle a los estudiantes de la EMPA las distintas posibilidades para distribuir sus materias en la semana, esto a partir de la selecci&oacute;n de materias a cursar y la selecci&oacute;n de los horarios disponibles o de preferencia.
 
 This project has two main componets:
 
