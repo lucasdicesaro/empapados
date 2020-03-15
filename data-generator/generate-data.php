@@ -1,8 +1,13 @@
 <?php
 
-	include 'Domain.php';
-	include 'Logger.php';
-	include 'functions.php';
+
+	foreach (glob("domain/*.php") as $filename) {
+		include $filename;
+	}
+	foreach (glob("utils/*.php") as $filename) {
+		include $filename;
+	}
+
 
 	$dom = new DOMDocument();
 	libxml_use_internal_errors(true); // Disable warnings when loading non-well-formed HTML by DomDocument
@@ -18,6 +23,8 @@
 	$current_datetime = date('d/m/Y H:i:s', time());
 
 	$logger = new Logger();
+	$logger->setLogLevel(Logger::NONE);
+
 	$levels = [];
 	$levelsIndex = -1;
 	$titles = $dom->getElementsByTagName('h2');
@@ -66,11 +73,9 @@
 					strpos($firstColValue, "ARMÓNICO") !== false) {
 					$tableHeaderLength = $colsLength;
 					$tableHeaderValue = $firstColValue;
-					$logger->debug("Encabezado: ".$tableHeaderValue." Cantidad de filas en el encabezado: ".$tableHeaderLength);
 					continue; // No se parsea el encabezado.
 				}
 
-				$logger->debug("Cantidad de filas en el cuerpo: ".$colsLength);
 
 
 				// PARSEA LA TABLA DE MATERIAS COLECTIVAS
@@ -106,17 +111,18 @@
 					$day = filter($cols->item($currentRowIndex++)->nodeValue);
 					$weekDays = filterAndSplitWeekDay($day);
 
+
+					$firstModuleDayId = encodeWeekDay($weekDays[0]);
+
+					$date = new Date();
+					$date->dayId = $firstModuleDayId;
+					
 					$startHourFull = filter($cols->item($currentRowIndex++)->nodeValue);
 					$startHour = filterHour($startHourFull);
 
 					$endHourFull = filter($cols->item($currentRowIndex++)->nodeValue);
 					$endHour = filterHour($endHourFull);
 
-
-					$dayOne = encodeWeekDay($weekDays[0]);
-
-					$date = new Date();
-					$date->dayId = $dayOne;
 
 					if (sizeof($weekDays) == 1) {
 						$difference = $endHour - $startHour;
@@ -130,22 +136,24 @@
 							$choice->addDate($date);
 
 							$dateNextMod = new Date();
-							$dateNextMod->dayId = $dayOne;						
+							$dateNextMod->dayId = $firstModuleDayId;						
 							$dateNextMod->start = $date->end; // La hora fin del modulo anterior
 							$dateNextMod->end = $endHour;
 							$choice->addDate($dateNextMod);
 						}
-					} else if (sizeof($weekDays) > 1) {  // es una materia con dos modulos semanales, en dos dias separados
-						$dayTwo = encodeWeekDay($weekDays[1]);
+					} else if (sizeof($weekDays) == 2) {  // es una materia con dos modulos semanales, en dos dias separados
+						$secondModuleDayId = encodeWeekDay($weekDays[1]);
 						$date->start = $startHour;
 						$date->end = $endHour;
 						$choice->addDate($date);
 
 						$dateNextDay = new Date();
-						$dateNextDay->dayId = $dayTwo;						
+						$dateNextDay->dayId = $secondModuleDayId;						
 						$dateNextDay->start = $startHour;
 						$dateNextDay->end = $endHour;
 						$choice->addDate($dateNextDay);
+					} else {
+						$logger->error("CANTIDAD DE MODULOS POR SEMANA NO IMPLEMENTADA: ".sizeof($weekDays));
 					}
 
 
@@ -323,248 +331,16 @@
 				echo "<br>";
 			}
 		}
-		// Si lo que se esta evaluando INSTRUMENTO ARMÓNICO PIANO, no se incrementa el Nivel. 
+		// Si lo que se esta evaluando es INSTRUMENTO ARMÓNICO PIANO, no se incrementa el Nivel.
+		// Asi los dos instrumentos ARMONICOS no quedan en dos niveles distintos. 
+		// Esto es porque lo pusieron en dos tablas y hasta ahora solo se cambiaba de tabla, cada vez que se cambiaba de nivel.
 		if (strcmp($tableHeaderValue, "INSTRUMENTO ARMÓNICO PIANO") != 0) {
 			$levelsIndex++;
 		}
 	}
 
 
-
-
-
-/*
-	$teacherNameForSubjects = '';
-	$oldTeacherNameForSubjects = '';
-
-	$instrumentName = '';
-	$oldInstrumentName = '';
-	$firstTimeInstruments = TRUE;
-
-	$classroom = '';
-	$day = '';
-
-	$levelsIndex = 0;
-	$subjects = [];
-	$subjectsIndex = -1;
-	$teacherNames = [];
-	$subjectTeachers = [];
-	$choices = [];
-	$choicesIndex = 0;
-	
-	// PARSEO DE MATERIAS
-	$tables = $dom->getElementsByTagName('table'); 
-	foreach ($tables as $table) {
-		$tbody = $table->getElementsByTagName('tbody');
-		$rows = $tbody->item(0)->getElementsByTagName('tr');
-		$colsLengthBefore = 0;
-		foreach ($rows as $row) {
-			$cols = $row->getElementsByTagName('td');
-			$colsLength = $cols->length;
-
-
-			if ($colsLength == 0 || $colsLength == 1) {
-				continue;
-			}
-			$index = 0;
-			if ($cols->item(0) != null) {				
-				if (filter($cols->item(0)->nodeValue) === "") {
-					// Para amparar los casos donde toda una fila esta vacia
-					continue;
-				}
-				if ($cols->item(0)->getAttribute('rowspan') > 0) {
-					if ($colsLength <= 5) {
-						// Esta validacion es para descartar la tabla de Repertorio, donde  hay profesores como primer columna
-						continue;
-					}
-					if ($colsLength >= $colsLengthBefore) { 
-						// Se busca la mayor cantidad de columnas porque son las que tienen las materias.
-						// Ademas, sacaron el <th> que tenian en 2018 y no se puede solo filtrar con 'rowspan'.
-						$colsLengthBefore = $colsLength;
-
-						$subject = new Subject();
-						$subject->id = ++$subjectsIndex;
-						$subject->name = filter($cols->item(0)->nodeValue);
-						$subject->levelId = $levelsIndex;
-						$subject->isForSingers = (stripos($subject->name, 'cantantes') !== false) ? 1 : 0;
-						$subject->isInstrument = 0;
-						$subjects[$subjectsIndex] = $subject;
-
-						
-						$index++; // Para poder obtener la comision en los casos donde la fila incluye la materia, se debe avanzar en 1 el indice.
-
-						$choice = new Choice();
-						$choice->id = $choicesIndex;
-						$choice->commission = filter($cols->item($index)->nodeValue);
-						$choice->subjectId = $subjectsIndex;						
-					}
-
-
-				} else {
-					$choice = new Choice();
-					$choice->id = $choicesIndex;
-					if (filter($cols->item(0)->nodeValue) != '') {// Para amparar los casos en que hay una celda vacia antes de la comision 
-						$choice->commission = filter($cols->item(0)->nodeValue);
-					}
-					$choice->subjectId = $subjectsIndex;
-				}
-
-				$weekDays = filterAndSplitWeekDay($cols->item($index+1)->nodeValue);
-
-				$index++;
-
-				$startHour = filterHour($cols->item($index+1)->nodeValue);
-
-				$index++;
-
-				$endHour = filterHour($cols->item($index+1)->nodeValue);
-				$dayOne = encodeWeekDay($weekDays[0]);				
-
-				$date = new Date();
-				$date->dayId = $dayOne;
-
-				if (sizeof($weekDays) == 1) {
-					$difference = $endHour - $startHour;
-					if ($difference <= 2) {// es una materia con un modulo semanal
-						$date->start = $startHour;
-						$date->end = $endHour;
-						$choice->addDate($date);
-					} else if ($difference == 4) { // es una materia con dos modulos semanales, uno a continuacion del otro
-						$date->start = $startHour;
-						$date->end = ($startHour+2);
-						$choice->addDate($date);
-
-						$dateNextMod = new Date();
-						$dateNextMod->dayId = $dayOne;						
-						$dateNextMod->start = $date->end; // La hora fin del modulo anterior
-						$dateNextMod->end = $endHour;
-						$choice->addDate($dateNextMod);
-					}
-				} else if (sizeof($weekDays) > 1) {  // es una materia con dos modulos semanales, en dos dias separados
-					$dayTwo = encodeWeekDay($weekDays[1]);
-					$date->start = $startHour;
-					$date->end = $endHour;
-					$choice->addDate($date);
-
-					$dateNextDay = new Date();
-					$dateNextDay->dayId = $dayTwo;						
-					$dateNextDay->start = $startHour;
-					$dateNextDay->end = $endHour;
-					$choice->addDate($dateNextDay);
-				}
-
-
-				$index++;
-
-				$choice->classroom = filter($cols->item($index++)->nodeValue);					
-
-				$index++;
-
-				// SE DESCARTAN VALORES NO DESEADOS EN EL COMBO de MATERIAS
-				if ($cols->item($index) != null &&
-					filter($cols->item($index)->nodeValue) !== "AULA" &&
-					filter($cols->item($index)->nodeValue) !== "a cobertura" &&
-					filter($cols->item($index)->nodeValue) !== "Hasta" &&
-					filter($cols->item($index)->nodeValue) !== "15:00") {
-					if ($colsLength > 4) {
-						$teacherNameForSubjects = filter($cols->item($index++)->nodeValue);
-					}
-					if ($teacherNameForSubjects != '') { // Para amparar los casos de celdas sin profesor
-						$oldTeacherNameForSubjects = $teacherNameForSubjects;
-					} else {
-						$teacherNameForSubjects = $oldTeacherNameForSubjects;
-					}
-
-					$choice->teacherId = getIndexOfTeacherArray($teacherNameForSubjects, $teacherNames);
-					addSubjectTeacher($choice->subjectId, $choice->teacherId, $subjectTeachers);
-
-					$choices[$choicesIndex++] = $choice;
-				}
-			} else {
-
-				if ($colsLength > 5) {
-					$instrumentName = filter($cols->item($colsLength-6)->nodeValue);
-				}
-				if ($instrumentName == "INSTRUMENTO") {
-					continue;
-				} else if ($instrumentName == '') {// Para amparar el caso del titulo "Repertorio" que esta fuera del esquema.
-					$instrumentName = $levels[$levelsIndex]->name;
-				}
-
-
-				if ($oldInstrumentName != $instrumentName || $firstTimeInstruments) {
-					$oldInstrumentName = $instrumentName;
-					$firstTimeInstruments = FALSE;
-
-					$subject = new Subject();
-					$subject->id = ++$subjectsIndex;
-					$subject->name = $instrumentName;
-					$subject->levelId = $levelsIndex;
-					$subject->isForSingers = (stripos($subject->name, 'Repertorio') !== false || stripos($subject->name, 'Canto') !== false) ? 1 : 0;
-					$subject->isInstrument = 1;
-					$subjects[$subjectsIndex] = $subject;
-
-				}
-
-				$choice = new Choice();
-				$choice->subjectId = $subjectsIndex;
-				$choice->id = $choicesIndex;
-
-				if ($colsLength > 4) {
-					$teacherNameForInstruments = filter($cols->item($colsLength-5)->nodeValue);
-				}
-				if ($teacherNameForInstruments != '') { // Para amparar los casos de celdas sin profesor
-					$oldTeacherNameForInstruments = $teacherNameForInstruments;
-				} else {
-					$teacherNameForInstruments = $oldTeacherNameForInstruments;
-				}
-
-
-				if ($colsLength > 3) {
-					if (is_numeric($day)) {
-						$dayAux = $day;
-					}
-					$day = encodeWeekDay(filterAndSplitWeekDay($cols->item($colsLength-4)->nodeValue)[0]);
-				}
-				if ($colsLength > 2) {				
-					$classroomAux = $classroom;
-					$classroom = filter($cols->item($colsLength-3)->nodeValue);
-					if ($classroom == '') {
-						// Soluciona el caso en donde hay dia pero no hay Aula, por lo que setea el Aula de la fila anterior.
-						$classroom = $classroomAux;
-					} else if (!is_numeric($day)) {
-						// Soluciona el caso en donde hay Aula, pero no hay dia, por lo que setea el dia de la fila anterior.
-						$day = $dayAux;
-					}
-
-					if (isAWeekDay($classroom)) { // Para amparar los casos en que la columna Aula esta vacia, y por ende la columna Dia queda corrida
-						$day = encodeWeekDay(filterAndSplitWeekDay($classroom)[0]);
-						$classroom = $classroomAux;
-					}
-				}
-
-
-				$date = new Date();
-				$date->dayId = $day;
-				$date->start = filterHour($cols->item($colsLength-2)->nodeValue);
-				$date->end = filterHour($cols->item($colsLength-1)->nodeValue);
-				$choice->addDate($date);
-
-				$choice->commission = 'PEPE';
-				$choice->classroom = $classroom;
-
-				$choice->teacherId = getIndexOfTeacherArray($teacherNameForInstruments, $teacherNames);
-				addSubjectTeacher($choice->subjectId, $choice->teacherId, $subjectTeachers);
-
-				$choices[$choicesIndex++] = $choice;
-			}					
-		}
-		$levelsIndex++;
-	}
-
-*/
-
-
+	/* Json's generation */
 
 	$htmlIdent = '&nbsp;&nbsp;&nbsp;';
 

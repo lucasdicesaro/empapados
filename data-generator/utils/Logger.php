@@ -8,7 +8,7 @@ class Logger
     const INFO = 1;
     const DEBUG = 2;
 
-    public $logLevel = self::NONE;
+	private $logLevel = self::NONE;
 
 
 	private function showMessage($level, $levelDescription, $message) {
@@ -18,17 +18,20 @@ class Logger
 	}
 
 	public function error($message) {
-		self::showMessage(self::ERROR, "ERROR", $message);
+		$this->showMessage(self::ERROR, "ERROR", $message);
 	}
 
 	public function info($message) {
-		self::showMessage(self::INFO, 'INFO', $message);
+		$this->showMessage(self::INFO, 'INFO', $message);
 	}
 
 	public function debug($message) {
-		self::showMessage(self::DEBUG, "DEBUG", $message);
+		$this->showMessage(self::DEBUG, "DEBUG", $message);
 	}
 
+	public function setLogLevel($level) {
+		$this->logLevel = $level;
+	}
 
 }
 

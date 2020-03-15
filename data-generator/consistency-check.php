@@ -1,8 +1,13 @@
 <?php
 
-	include 'Domain.php';
-	include 'Logger.php';
-	include 'functions.php';
+
+	foreach (glob("domain/*.php") as $filename) {
+		include $filename;
+	}
+	foreach (glob("utils/*.php") as $filename) {
+		include $filename;
+	}
+
 
 	$dom = new DOMDocument();
 	libxml_use_internal_errors(true); // Disable warnings when loading non-well-formed HTML by DomDocument
@@ -18,6 +23,8 @@
 	$current_datetime = date('d/m/Y H:i:s', time());
 
 	$logger = new Logger();
+	$logger->setLogLevel(Logger::DEBUG);
+
 	$levels = [];
 	$levelsIndex = -1;
 	$titles = $dom->getElementsByTagName('h2');
@@ -60,11 +67,11 @@
 					strpos($firstColValue, "ARMÓNICO") !== false) {
 					$tableHeaderLength = $colsLength;
 					$tableHeaderValue = $firstColValue;
-					$logger->debug("Encabezado: ".$tableHeaderValue." Cantidad de filas en el encabezado: ".$tableHeaderLength);
+					//$logger->debug("Encabezado: ".$tableHeaderValue." Cantidad de filas en el encabezado: ".$tableHeaderLength);
 					continue; // No se parsea el encabezado.
 				}
 
-				$logger->debug("Cantidad de filas en el cuerpo: ".$colsLength);
+				//$logger->debug("Cantidad de filas en el cuerpo: ".$colsLength);
 
 
 				// PARSEA LA TABLA DE MATERIAS COLECTIVAS
@@ -86,7 +93,10 @@
 
 					$day = filter($cols->item($currentRowIndex++)->nodeValue);
 					$weekDays = filterAndSplitWeekDay($day);
-					$row = $row."Dia: ".$day." (weekDays size: ".sizeof($weekDays).") ";
+					$row = $row."Dia: ".$day." ";
+
+					$firstModuleDayId = encodeWeekDay($weekDays[0]);
+
 					$startHourFull = filter($cols->item($currentRowIndex++)->nodeValue);
 					$startHour = filterHour($startHourFull);
 					$row = $row."Desde: ".$startHourFull." (startHour: ".$startHour.") ";
@@ -94,8 +104,17 @@
 					$endHour = filterHour($endHourFull);
 					$row = $row."Hasta: ".$endHourFull." (endHour: ".$endHour.") ";
 
-					$dayOne = encodeWeekDay($weekDays[0]);
-					$row = $row." (dayOne: ".$dayOne.") ";
+					if (sizeof($weekDays) == 1) {
+						$row = $row." (dayId: ".$firstModuleDayId.") ";
+					} else if (sizeof($weekDays) == 2) {  // es una materia con dos modulos semanales, en dos dias separados
+						$row = $row." (firstDayId: ".$firstModuleDayId.") ";
+						$secondModuleDayId = encodeWeekDay($weekDays[1]);
+						$row = $row." (secondDayId: ".$secondModuleDayId.") ";
+					} else {
+						$logger->error("CANTIDAD DE MODULOS POR SEMANA NO IMPLEMENTADA: ".sizeof($weekDays));
+					}
+
+
 					$classroom = filter($cols->item($currentRowIndex++)->nodeValue)." ";
 					$row = $row."Aula: ".$classroom." ";
 
@@ -165,7 +184,7 @@
 
 					$currentTeacherId = getIndexOfTeacherArray($currentTeacher, $teacherNames);
 
-					$row = $row."Profesor: ".$currentTeacher." (currentTeacherId: ".$currentTeacherId.") ";
+					$row = $row."Profesor: ".$currentTeacher." (teacherId: ".$currentTeacherId.") ";
 
 					$currentRowIndex--;
 
@@ -204,7 +223,7 @@
 
 
 					$encodedWeekDay = encodeWeekDay(filterAndSplitWeekDay($currentDay)[0]);
-					$row = $row."Dia: ".$currentDay." (encodedWeekDay: ".$encodedWeekDay.") "; // Se imprime aca, porque aun se sigue manipulando el dia al momento de analizar el Aula
+					$row = $row."Dia: ".$currentDay." (dayId: ".$encodedWeekDay.") "; // Se imprime aca, porque aun se sigue manipulando el dia al momento de analizar el Aula
 					
 					$row = $row."Aula: ".$currentClassroom." ";
 
