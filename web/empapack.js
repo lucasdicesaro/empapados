@@ -154,7 +154,7 @@ $(document).ready(function() {
 			}
 	
 			selectedTeacherIds = $('select#teacherSelect').val();
-            //console.log("Materias Select INDEX : " + selectedTeacherIds);
+            console.log("Profesores Select INDEX : " + selectedTeacherIds);
 			if (selectedTeacherIds == null || selectedTeacherIds.length == 0) {
 				$("#consolePrph").text('Debe seleccionar al menos un profesor, o Todos');
 				return;
@@ -249,7 +249,7 @@ $(document).ready(function() {
 			var teacherName = allTeacherNames[selectedSubjectTeacher.teacherId].name;
 			//console.log('Agregando el profesor: ' + teacherName);
 			$("#teacherSelect").find("option:first").text("-Todos los profesores-");
-			$("#teacherSelect").append('<option value="'+a+'">'+teacherName+' ('+allSubjects[selectedSubjectTeacher.subjectId].name+')</option>');
+			$("#teacherSelect").append('<option value="'+selectedSubjectTeacher.teacherId+'">'+teacherName+' ('+allSubjects[selectedSubjectTeacher.subjectId].name+')</option>');
 		});	
 
         $("#teacherSelect option:first-child").attr("selected", "selected");

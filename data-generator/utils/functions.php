@@ -159,17 +159,5 @@
 
 	}
 
-	function buildSubject($levelsIndex, $subjectName) {
-
-		$subject = new Subject();
-		$subject->name = $subjectName;
-		$subject->levelId = $levelsIndex;
-		$subject->isForSingers = (stripos($subject->name, 'cantantes') !== false) ? 1 : 0;
-		$subject->isInstrument = 0;
-
-		return $subject;
-	}
-
-
 
 ?>

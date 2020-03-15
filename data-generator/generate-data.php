@@ -88,7 +88,7 @@
 						$lastSubject = $currentSubject;
 
 						// Se cargan las materias colectivas 
-						$subject = buildSubject($levelsIndex, $currentSubject);
+						$subject = Subject::buildSubject($levelsIndex, $currentSubject);
 						$subject->id = ++$subjectsIndex;
 						$subject->levelId = $levelsIndex;
 						$subjects[$subjectsIndex] = $subject;
@@ -178,13 +178,13 @@
 
 				} else if ($tableHeaderLength === 6 || $tableHeaderLength === 5) {
 
-					// $tableHeaderLength === 6: PARSEA LA TABLA DE INSTRUMENTO ARMONICO E INSTRUMENTOS
+					// $tableHeaderLength === 6: PARSEA LA TABLA DE INSTRUMENTO ARMONICO E INSTRUMENTO PRINCIPAL
 					// $tableHeaderLength === 5: PARSEA LA TABLA DE REPERTORIO
 
 					$currentRowIndex = $tableHeaderLength;
 
 					if ($tableHeaderLength === 6) {
-						// ES LA TABLA DE INSTRUMENTO ARMONICO O INSTRUMENTOS
+						// ES LA TABLA DE INSTRUMENTO ARMONICO O INSTRUMENTO PRINCIPAL
 						$currentSubject = null;
 
 						if (strpos($tableHeaderValue, "ARMÓNICO") !== false && $lastSubject !== $tableHeaderValue) {
@@ -193,26 +193,29 @@
 							$lastSubject = $currentSubject;
 
 							// Se cargan las materias instrumento armonico
-							$subject = buildSubject($levelsIndex, $currentSubject);
 							if ($tableHeaderLength === 6) { // Solo 6, para evitar las de 5 columnas, que es Repertorio.
-								// Se setea "1" en las materias que son Instrumento (se omite repertorio).
-		 						$subject->isInstrument = 1;
+								$subject = Subject::buildInstrument($levelsIndex, $currentSubject);
+							} else {
+								// Repertorio (si es que tiene 5 columnas)
+								$subject = Subject::buildSubject($levelsIndex, $currentSubject);
 							}
 							$subject->id = ++$subjectsIndex;
 							$subject->levelId = $levelsIndex;
 							$subjects[$subjectsIndex] = $subject;
 						} else {
-							// Es la tabla de Instrumentos. Es por descarte. Si no es el Armonico es el individual
+							// Es la tabla de Instrumentos Principales (por descarte). Si no es el Armonico es el principal
 							if ($colsLength >= $currentRowIndex && $cols->item($colsLength-$currentRowIndex) != null) {
 								$currentSubject = filter($cols->item($colsLength-$currentRowIndex)->nodeValue);
 								$lastSubject = $currentSubject;
 					
-								// Se cargan las materias instrumento principal
-								$subject = buildSubject($levelsIndex, $currentSubject);
+								// Se carga las materias de instrumento principal
 								if ($tableHeaderLength === 6) { // Solo 6, para evitar las de 5 columnas, que es Repertorio.
-									// Se setea "1" en las materias que son Instrumento (se omite repertorio).
-			 						$subject->isInstrument = 1;
+									$subject = Subject::buildInstrument($levelsIndex, $currentSubject);
+								} else {
+									// Repertorio (si es que tiene 5 columnas)
+									$subject = Subject::buildSubject($levelsIndex, $currentSubject);
 								}
+
 								$subject->id = ++$subjectsIndex;
 								$subject->levelId = $levelsIndex;
 								$subjects[$subjectsIndex] = $subject;
@@ -233,7 +236,7 @@
 					
 							$lastSubject = $currentSubject;						
 							// Se carga la materia Repertorio
-							$subject = buildSubject($levelsIndex, $currentSubject);
+							$subject = Subject::buildSubject($levelsIndex, $currentSubject);
 							$subject->isForSingers = 1;
 							$subject->id = ++$subjectsIndex;
 							$subject->levelId = $levelsIndex;
