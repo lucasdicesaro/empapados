@@ -176,6 +176,7 @@ $(document).ready(function() {
 	function populateScheduleTable() {
 
 		// Tabla de Horarios 
+		$('#scheduleSelectionSection').empty();
 		var table = $('#scheduleSelectionSection');
 		var thead = $('<thead></thead>').appendTo(table)
 		var row = $('<tr></tr>').appendTo(thead)
@@ -635,47 +636,59 @@ $(document).ready(function() {
 
 		var filteredChoices = [];
 		var filteredChoicesIndex = 0;
-		for (var q = 0; q < selectedTeacherIds.length; q++) {
-			var selectedTeacherId = selectedTeacherIds[q];
 
-			// 1. Se busca la materia que el profesor dicta.
-			var subjectFromTeacher = getSubjectFromTeacherId(selectedTeacherId);
-			if (subjectFromTeacher != null) {
-				console.log('La materia del profesor [' + selectedTeacherId + '] es: [' + subjectFromTeacher.id + ']');
+		// 1. Se busca la materia que el profesor dicta.
+		var selectedTeachersSubjects = getSubjectsFromTeacherIds(selectedTeacherIds);
+		if (selectedTeachersSubjects == null || selectedTeachersSubjects.length == 0) {
+			console.log('Los profesores [' + selectedTeacherIds + '] no tiene materias en los horarios elegidos.');
+			return null;
+		}
+
+/*
+		console.log('Los profesores [' + selectedTeacherIds + '] tienen estas materias: ');
+        $.each(selectedTeachersSubjects, function (index, selectedTeachersSubject) {
+			console.log('Materia [' + selectedTeachersSubject.id + ']');
+        });
+*/
+        // 2. Se quitan las materias que no fueron elegidas
+		var filteredSubjects = getSelectedSubjects(selectedTeachersSubjects, selectedInstrumentAndSubjectsIds);
+/*
+		console.log('Los profesores tienen las materias mencionadas, de las cuales se eligieron estas: ');
+        $.each(filteredSubjects, function (index, filteredSubject) {
+			console.log('Materia [' + filteredSubject.id + ']');
+        });
+*/
+		// 3. Se obtienen los profesores de esas materias y se remueven los profesores seleccionados en 1.
+		var teacherIds = getTeacherIdsFromSubjectIds(filteredSubjects);
+		console.log('Las materias elegidas son dadas por una cantidad de '+teacherIds.length+' profesores.');
+		if (teacherIds == null || teacherIds.length == 0) {
+			console.log('Las materias siguientes materias no son dadas por ningun profesor en los horarios elegidos:');
+	        $.each(selectedTeachersSubjects, function (index, selectedTeachersSubject) {
+				console.log('Materia [' + selectedTeachersSubject.id + ']');
+	        });
+			return null;
+		}
+
+		console.log('Se remueven los profesores seleccionados [' + selectedTeacherIds + '] de la lista de profesores a excluir.');
+		var teacherToExcludeIds = getTeacherIdsWithoutTeacherIdToBeRemoved(teacherIds, selectedTeacherIds);
+/*
+		console.log('Lista de profesores a excluir:');
+        $.each(teacherToExcludeIds, function (index, selectedSubjectId) {
+			console.log('Se excluira a [' + selectedSubjectId + ']');
+        });
+*/
+
+		// 4. Se descartan las opciones que contentan los profesores obtenidos en 2.
+		for (var c = 0; c < choices.length; c++) {
+			var choice = choices[c];
+			if (isThisChoiceBelongsToAnyTeacherIds(choice, teacherToExcludeIds) == false) {
+				//console.log('Se incluye la opcion: ' + choice.id + ' de la materia: ' + choice.subjectId + ' del profesor: ' + choice.teacherId);
+				filteredChoices[filteredChoicesIndex++] = choice;
 			} else {
-				console.log('ERROR INESPERADO: El profesor [' + selectedTeacherId + '] no tiene materias!!');
-				return null;
-			}
-
-			// 2. Se obtienen los profesores de esa materia y se remueve al profesor elegido en 1.
-			var teacherIds = getTeacherIdsFromSubjectId(subjectFromTeacher.id);
-			if (teacherIds == null || teacherIds.length == 0) {
-				console.log('ERROR INESPERADO: La materia  [' + subjectFromTeacher.id + '] no es dada por ningun profesor.');
-				return null;
-			}
-
-			console.log('Se remueve el profesor [' + selectedTeacherId + '] de la lista de profesores a excluir.');
-			var teacherToExcludeIds = getTeacherIdsWithoutTeacherIdToBeRemoved(teacherIds, selectedTeacherId);
-
-			console.log('La materia [' + subjectFromTeacher.id + '] es dada por los siguientes teacherIds (mas el teacherId ['+selectedTeacherId+']):');
-            $.each(teacherToExcludeIds, function (index, selectedSubjectId) {
-				console.log('Se excluira a  [' + selectedSubjectId + ']');
-            });
-
-
-			// 3. Se descartan las opciones que contentan los profesores obtenidos en 2.
-			for (var c = 0; c < choices.length; c++) {
-				var choice = choices[c];
-				for (var a = 0; a < teacherToExcludeIds.length; a++) {
-					if (choice.teacherId != teacherToExcludeIds[a]) {
-						console.log('Se incluye la opcion: ' + choice.id + ' de la materia: ' + choice.subjectId + ' del profesor: ' + choice.teacherId)
-						filteredChoices[filteredChoicesIndex++] = choice;
-					} else {
-						console.log('Se excluye la opcion: ' + choice.id + ' de la materia: ' + choice.subjectId + ' del profesor: ' + choice.teacherId)
-					}
-				}
+				//console.log('Se excluye la opcion: ' + choice.id + ' de la materia: ' + choice.subjectId + ' del profesor: ' + choice.teacherId);
 			}
 		}
+
 
 		if (filteredChoices == null || filteredChoices.length == 0) {
 			console.log('Cantidad de opciones resultantes luego de aplicar los filtros de profesores es 0');
@@ -687,48 +700,96 @@ $(document).ready(function() {
 	}
 
 
-	/** Returns the subject that 'teacherId' teaches */
-	function getSubjectFromTeacherId(teacherId) {
+	/** Retorna la materia del profesor, o las materias de los profesores 'teacherIds' */
+	function getSubjectsFromTeacherIds(teacherIds) {
+		var filteredSubjectIds = new Array;
+		var filteredSubjectIdsIndex = 0;
 		for (var a = 0; a < subjectTeachers.length; a++) {
 			var subjectTeacher = subjectTeachers[a];
-			if (subjectTeacher.teacherId == teacherId) {
-				for (var p = 0; p < allSubjects.length; p++) {
-					var subject = allSubjects[p];
-					if (subjectTeacher.subjectId == subject.id) {
-						return subject;
-					}
+			for (var b = 0; b < teacherIds.length; b++) {
+				if (subjectTeacher.teacherId == teacherIds[b] && (isThisItemExists(subjectTeacher.subjectId, filteredSubjectIds) == false)) {
+					filteredSubjectIds[filteredSubjectIdsIndex++] = subjectTeacher.subjectId;
 				}
 			}
 		}
-		return null;
+
+		var teacherSubjects = new Array;
+		var teacherSubjectsIndex = 0;
+		for (var a = 0; a < filteredSubjectIds.length; a++) {
+			for (var p = 0; p < allSubjects.length; p++) {
+				var subject = allSubjects[p];
+				if (filteredSubjectIds[a] == subject.id) {
+					teacherSubjects[teacherSubjectsIndex++] = subject;
+				}
+			}
+		}
+		return teacherSubjects;
 	}
 
 	/** Returns the teachers that teach the 'subjectId' */
-	function getTeacherIdsFromSubjectId(subjectId) {
-		var teacherIds = [];
+	function getTeacherIdsFromSubjectIds(subjectIds) {
+		var teacherIds = new Array;
 		var teacherIdsIndex = 0;
 		for (var a = 0; a < subjectTeachers.length; a++) {
 			var subjectTeacher = subjectTeachers[a];
-			if (subjectTeacher.subjectId == subjectId) {
-				teacherIds[teacherIdsIndex++] = subjectTeacher.teacherId;
+			for (var b = 0; b < subjectIds.length; b++) {
+				if (subjectTeacher.subjectId == subjectIds[b].id) {
+					teacherIds[teacherIdsIndex++] = subjectTeacher.teacherId;
+				}
 			}
 		}
 		return teacherIds;
 	}
 
-	/** Obtiene un array de teacherIds, sin el profesor indicado en 'teacherIdToBeRemoved' */
-	function getTeacherIdsWithoutTeacherIdToBeRemoved(teacherIds, teacherIdToBeRemoved) {
+	/** Obtiene un array de teacherIds, sin los profesores que vienen en el parametro 'teacherIdsToBeRemoved' */
+	function getTeacherIdsWithoutTeacherIdToBeRemoved(teacherIds, teacherIdsToBeRemoved) {
 		var teacherWithoutElementIds = new Array;
 		var teacherWithoutElementIdsIndex = 0;
 		for (var i = 0; i < teacherIds.length; i++) {
 			//console.log(teacherIds[i]);
-			if (teacherIds[i] != teacherIdToBeRemoved) {
+			if (isThisItemExists(teacherIds[i], teacherIdsToBeRemoved) == false) {
 				teacherWithoutElementIds[teacherWithoutElementIdsIndex++] = teacherIds[i];
 			}
 		}
 		return teacherWithoutElementIds;
 	}
 
+	/** Obtiene un array de subjectId descartando aquellas materias que no fueron seleccionadas */
+	function getSelectedSubjects(subjects, selectedSubjectIds) {
+		var selectedSubjects = new Array;
+		var selectedSubjectsIndex = 0;
+		for (var i = 0; i < subjects.length; i++) {
+			//console.log(teacherIds[i]);
+			if (isThisItemExists(subjects[i].id, selectedSubjectIds)) {
+				selectedSubjects[selectedSubjectsIndex++] = subjects[i];
+			}
+		}
+		return selectedSubjects;
+	}
+
+	/** Retorna true si es que la opcion 'choice' es dada por algun profesor de la lista 'teacherId' */
+	function isThisChoiceBelongsToAnyTeacherIds(choice, teacherIds) {
+		//console.log('Cantidad de profesores a evaluar: '+teacherIds.length);
+		for (var idx = 0; idx < teacherIds.length; idx++) {
+			var teacherId = teacherIds[idx];
+			//console.log('Evaluando al teacherId ['+teacherId+'] Indice '+idx);
+			if (choice.teacherId == teacherId) {
+				//console.log('La opcion ['+choice.id+'] con materia ['+choice.subjectId+'] es dada por el profesor ['+choice.teacherId+'].');
+				return true;
+			}
+		}
+		//console.log('La opcion ['+choice.id+'] con materia ['+choice.subjectId+'] es dada por el profesor ['+choice.teacherId+'] NO es una opcion que sea dada por los profesores de la lista.');
+		return false;
+	}
+
+	function isThisItemExists(item, elements) {
+		for (var idx = 0; idx < elements.length; idx++) {
+			if (item == elements[idx]) {
+				return true;
+			}
+		}
+		return false;
+	}
 
 
 	function isDatesInInterval(selectedDateTimes, dates) {
@@ -1016,6 +1077,8 @@ $(document).ready(function() {
 		$("#consolePrph").empty();
 		window.scrollTo(0, 0);
 		$('html, body').animate({scrollTop:0}, 'slow');
+
+		showFilters();
 	}
 
 
