@@ -2,3 +2,6 @@
 # Idea files
 .idea/
 empapados.iml
+
+# Distribution files
+web/dist/
