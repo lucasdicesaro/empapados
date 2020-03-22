@@ -363,9 +363,11 @@ $(document).ready(function() {
 			return -1;
 		}
 
+		var table = $('<table></table>').appendTo(selectedTeachersFilter);
 		if (selectedTeacherIds.length > 0 && selectedTeacherIds[0] != EMPTY_SELECTION) {
 			$.each(selectedTeacherIds, function(i, selectedTeacherId) {
-				selectedTeachersFilter.text(allTeacherNames[selectedTeacherId].name)
+				var row = $('<tr></tr>').appendTo(table)
+				$('<td></td>').text(allTeacherNames[selectedTeacherId].name).appendTo(row)
 			});
 		} else {
 			selectedTeachersFilter.text('Todos')
