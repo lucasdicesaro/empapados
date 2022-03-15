@@ -156,9 +156,11 @@
 						$logger->error("CANTIDAD DE MODULOS POR SEMANA NO IMPLEMENTADA: ".sizeof($weekDays));
 					}
 
-
-					$choice->classroom = filter($cols->item($currentRowIndex++)->nodeValue)." ";
-					$row = $row."Aula: ".$choice->classroom." ";
+					$currentNode = $cols->item($currentRowIndex++);
+					if ($currentNode != null) {
+						$choice->classroom = filter($currentNode->nodeValue)." ";
+						$row = $row."Aula: ".$choice->classroom." ";
+					}
 
 					$currentTeacher = null;
 					if ($cols->item($currentRowIndex) != null) {
@@ -169,7 +171,7 @@
 						$currentTeacher = $lastTeacher;
 					}
 
-					$choice->teacherId = getIndexOfTeacherArray($currentTeacher, $teacherNames);
+					$choice->teacherId = findOrCreate($currentTeacher, $teacherNames);
 					addSubjectTeacher($choice->subjectId, $choice->teacherId, $subjectTeachers);
 
 					$row = $row."Profesor: ".$currentTeacher." ";
@@ -260,7 +262,7 @@
 						$currentTeacher = $lastTeacher;
 					}
 
-					$choice->teacherId = getIndexOfTeacherArray($currentTeacher, $teacherNames);
+					$choice->teacherId = findOrCreate($currentTeacher, $teacherNames);
 					addSubjectTeacher($choice->subjectId, $choice->teacherId, $subjectTeachers);
 
 					$row = $row."Profesor: ".$choice->teacherId." ";
@@ -271,7 +273,7 @@
 						$currentDay = filter($cols->item($colsLength-$currentRowIndex)->nodeValue);
 						$lastDay = $currentDay;
 					}
-					if ($currentDay == null) {
+					if (isset($currentDay) && $currentDay == null) {
 						$currentDay = $lastDay;
 					}
 
@@ -288,22 +290,24 @@
 							$lastClassroom = $currentClassroom;
 						}
 					}
-					if ($currentClassroom == null ) {
+					if ($currentClassroom == null && isset($lastClassroom)) {
 						// Soluciona el caso en donde hay dia pero no hay Aula, por lo que setea el Aula de la fila anterior.
 						$currentClassroom = $lastClassroom;
-					} else if (!is_numeric($currentDay)) {
+					} else if (isset($currentDay) && !is_numeric($currentDay)) {
 						// Soluciona el caso en donde hay Aula, pero no hay dia, por lo que setea el dia de la fila anterior.
 						//$currentDay = $lastDay;
 					}
 
-
-					$encodedWeekDay = encodeWeekDay(filterAndSplitWeekDay($currentDay)[0]);
-					$row = $row."Dia: ".$currentDay." "; // Se imprime aca, porque aun se sigue manipulando el dia al momento de analizar el Aula
-					
+					if (isset($currentDay)) {
+						$encodedWeekDay = encodeWeekDay(filterAndSplitWeekDay($currentDay)[0]);
+						$row = $row."Dia: ".$currentDay." "; // Se imprime aca, porque aun se sigue manipulando el dia al momento de analizar el Aula
+					}
 					$row = $row."Aula: ".$currentClassroom." ";
 
-					$date = new Date();
-					$date->dayId = $encodedWeekDay;
+					if (isset($encodedWeekDay)) {
+						$date = new Date();
+						$date->dayId = $encodedWeekDay;
+					}
 
 					$currentRowIndex--;
 					if ($colsLength >= $currentRowIndex) {

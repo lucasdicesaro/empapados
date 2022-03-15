@@ -97,18 +97,22 @@
     }
 
 
-	function getIndexOfTeacherArray($value, &$array) {
+	function findOrCreate($value, &$array) {
 
-		for ($index = 0; $index < sizeof($array); $index++) {
-			$arrayValue = $array[$index];
-			//echo 'COMPARANDO value: '.$value.'vs arrayValue: '.$arrayValue.'<br>';
-			if (strcmp($arrayValue, removeComma($value)) === 0) {
-			//	echo 'ENCONTRADO $value: '.$value.' en el index: '.$index.'<br>';
-				return $index;
+		if (isset($array)) {
+			for ($index = 0; $index < sizeof($array); $index++) {
+				$arrayValue = $array[$index];
+				//echo 'COMPARANDO value: '.$value.'vs arrayValue: '.$arrayValue.'<br>';
+				if (strcmp($arrayValue, removeComma($value)) === 0) {
+				//	echo 'ENCONTRADO $value: '.$value.' en el index: '.$index.'<br>';
+					return $index;
+				}
 			}
+			$index = sizeof($array);
+		} else {
+			$index = 0;
 		}
 
-		$index = sizeof($array);
 		//echo 'NO ENCONTRADO $value: '.$value.'. Se agrega en el index: '.$index.'<br>';
 		$array[$index] = removeComma($value);
 		return $index;
@@ -121,16 +125,19 @@
 
     function addSubjectTeacher($subjectId, $teacherId, &$subjectTeachers) {
 
-		for ($index = 0; $index < sizeof($subjectTeachers); $index++) {
-			$subjectTeacher = $subjectTeachers[$index];
-			//echo 'COMPARANDO value: '.$value.'vs arrayValue: '.$arrayValue.'<br>';
-			if ($subjectId == $subjectTeacher->subjectId && $teacherId == $subjectTeacher->teacherId) {
-			//	echo 'ENCONTRADO $value: '.$value.' en el index: '.$index.'<br>';
-				return $index;
+		if (isset($subjectTeachers)) {
+			for ($index = 0; $index < sizeof($subjectTeachers); $index++) {
+				$subjectTeacher = $subjectTeachers[$index];
+				//echo 'COMPARANDO value: '.$value.'vs arrayValue: '.$arrayValue.'<br>';
+				if ($subjectId == $subjectTeacher->subjectId && $teacherId == $subjectTeacher->teacherId) {
+				//	echo 'ENCONTRADO $value: '.$value.' en el index: '.$index.'<br>';
+					return $index;
+				}
 			}
+			$index = sizeof($subjectTeachers);
+		} else {
+			$index = 0;
 		}
-
-		$index = sizeof($subjectTeachers);
 		//echo 'NO ENCONTRADO $value: '.$value.'. Se agrega en el index: '.$index.'<br>';
 		$subjectTeacher = new SubjectTeacher();
 		$subjectTeacher->subjectId = $subjectId;
