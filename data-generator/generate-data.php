@@ -11,7 +11,8 @@
 
 	$dom = new DOMDocument();
 	libxml_use_internal_errors(true); // Disable warnings when loading non-well-formed HTML by DomDocument
-	$html = $dom->loadHTMLFile("http://www.empa.edu.ar/index.php?seccion=formBasicaHorarios");
+	//$html = $dom->loadHTMLFile("http://www.empa.edu.ar/index.php?seccion=formBasicaHorarios");
+	$html = $dom->loadHTMLFile("20220315_empasource.html");
 	if ($html === false) {
 		echo "<br>Error de conexion. Saliendo...<br>";
 		return;
