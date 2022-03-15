@@ -358,9 +358,10 @@
 	$message = $message.' *    http://www.empa.edu.ar/index.php?seccion=formBasicaHorarios<br>';
 	$message = $message.' */<br><br>';
 
+	$message = $message.'var currentFormattedDatetime = \''.$current_datetime.'\';<br><br>';
+
 	$message = $message.buildWeekDayDataStructure();
 	$message = $message.buildHoursDataStructure();
-
 
 	$message = $message.'var allLevels = [';
 	for ($index = 0; $index < sizeof($levels); $index++) {

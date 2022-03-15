@@ -29,6 +29,9 @@ $(document).ready(function() {
 	var dateTimeBooleanMatrix = [];
 
 
+	function showDatetime() {
+		$("#currentDatetime").text("Datos actualizados al: " + currentFormattedDatetime);
+	}
 
 	function showFilters() {
 
@@ -44,9 +47,9 @@ $(document).ready(function() {
 
 	}
 
+	showDatetime();
 
 	showFilters();
-
 
 	function populateLevelsDropdown() {
 		$.each(allLevels, function(index, level) {

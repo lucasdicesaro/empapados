@@ -7,6 +7,8 @@
 * http://www.empa.edu.ar/index.php?seccion=formBasicaHorarios
 */
 
+var currentFormattedDatetime = '15/03/2022 01:04:32';
+
 var allDates = [
  {id: 0, name: 'Lunes', initial: 'L'},
  {id: 1, name: 'Martes', initial: 'M'},
